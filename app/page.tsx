@@ -1,65 +1,129 @@
-import Image from "next/image";
+'use client';
 
-export default function Home() {
+import { useState, useEffect } from 'react';
+import { Trash2, Plus, CheckCircle2 } from 'lucide-react';
+
+interface Todo {
+  id: number;
+  text: string;
+  createdAt: string;
+}
+
+export default function TodoApp() {
+  const [todos, setTodos] = useState<Todo[]>([]);
+  const [inputValue, setInputValue] = useState('');
+  const [isLoaded, setIsLoaded] = useState(false);
+
+  // Load todos from localStorage on mount
+  useEffect(() => {
+    const savedTodos = localStorage.getItem('todos');
+    if (savedTodos) {
+      try {
+        setTodos(JSON.parse(savedTodos));
+      } catch (error) {
+        console.error('Error loading todos:', error);
+      }
+    }
+    setIsLoaded(true);
+  }, []);
+
+  // Save todos to localStorage whenever they change
+  useEffect(() => {
+    if (isLoaded) {
+      localStorage.setItem('todos', JSON.stringify(todos));
+    }
+  }, [todos, isLoaded]);
+
+  const addTodo = (e: React.MouseEvent | React.KeyboardEvent) => {
+    e.preventDefault();
+    if (inputValue.trim() === '') return;
+
+    const newTodo: Todo = {
+      id: Date.now(),
+      text: inputValue,
+      createdAt: new Date().toLocaleString()
+    };
+
+    setTodos([...todos, newTodo]);
+    setInputValue('');
+  };
+
+  const deleteTodo = (id: number) => {
+    setTodos(todos.filter(todo => todo.id !== id));
+  };
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-8 px-4">
+      <div className="max-w-2xl mx-auto">
+        {/* Header */}
+        <div className="text-center mb-8">
+          <h1 className="text-4xl font-bold text-gray-800 mb-2">My To-Do App</h1>
+          <p className="text-gray-600">Stay organized and productive</p>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
+
+        {/* Add Todo Form */}
+        <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
+          <div className="flex gap-3">
+            <input
+              type="text"
+              value={inputValue}
+              onChange={(e) => setInputValue(e.target.value)}
+              onKeyPress={(e) => e.key === 'Enter' && addTodo(e)}
+              placeholder="What needs to be done?"
+              className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+            <button
+              onClick={addTodo}
+              className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium flex items-center gap-2 transition-colors"
+            >
+              <Plus size={20} />
+              Add
+            </button>
+          </div>
         </div>
-      </main>
+
+        {/* Todo List */}
+        <div className="bg-white rounded-lg shadow-lg p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-semibold text-gray-800">
+              Tasks ({todos.length})
+            </h2>
+            <CheckCircle2 className="text-green-500" size={24} />
+          </div>
+
+          {todos.length === 0 ? (
+            <div className="text-center py-12">
+              <p className="text-gray-400 text-lg">No tasks yet. Add one above!</p>
+            </div>
+          ) : (
+            <ul className="space-y-3">
+              {todos.map((todo) => (
+                <li
+                  key={todo.id}
+                  className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+                >
+                  <div className="flex-1">
+                    <p className="text-gray-800 font-medium">{todo.text}</p>
+                    <p className="text-gray-500 text-sm mt-1">{todo.createdAt}</p>
+                  </div>
+                  <button
+                    onClick={() => deleteTodo(todo.id)}
+                    className="ml-4 text-red-500 hover:text-red-700 hover:bg-red-50 p-2 rounded-lg transition-colors"
+                    title="Delete task"
+                  >
+                    <Trash2 size={20} />
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div className="text-center mt-8 text-gray-600">
+          <p className="text-sm">Built with Next.js • Deployed on Azure</p>
+        </div>
+      </div>
     </div>
   );
 }
